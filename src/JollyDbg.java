@@ -4,6 +4,7 @@ import javafx.event.EventHandler;
 import javafx.scene.Scene;
 import javafx.scene.control.TextArea;
 import javafx.scene.layout.StackPane;
+import javafx.scene.text.Font;
 import javafx.stage.Stage;
 
 import java.awt.event.KeyEvent;
@@ -28,6 +29,7 @@ public class JollyDbg extends Application
   private TextArea txtAssembly = null;
   boolean step = false;
   boolean quit = false;
+  boolean ret = false;
 
   public void launchGdb()
   {
@@ -93,6 +95,12 @@ public class JollyDbg extends Application
                 bw.flush();
                 Platform.exit();
               }
+              if (ret)
+              {
+                ret = false;
+                bw.write("return\ny\n");
+                step = true;
+              }
               if (step)
               {
                 step = false;
@@ -100,7 +108,7 @@ public class JollyDbg extends Application
                 bw.flush();
               }
 
-              Thread.sleep(50);
+              Thread.sleep(10);
             }
           }
           catch (Throwable ignore) {}
@@ -127,6 +135,7 @@ public class JollyDbg extends Application
 
     txtAssembly = new TextArea();
     txtAssembly.setEditable(false);
+    txtAssembly.setFont(Font.font(30));
 
     StackPane root = new StackPane();
     root.getChildren().add(txtAssembly);
@@ -138,6 +147,10 @@ public class JollyDbg extends Application
       {
         case F8:
           step = true;
+          break;
+
+        case F9:
+          ret = true;
           break;
 
         case ESCAPE:
