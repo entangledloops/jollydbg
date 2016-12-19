@@ -1,21 +1,24 @@
 import javafx.application.Application;
 import javafx.application.Platform;
-import javafx.event.EventHandler;
+import javafx.beans.property.SimpleStringProperty;
+import javafx.collections.FXCollections;
+import javafx.collections.ObservableList;
+import javafx.geometry.Insets;
 import javafx.scene.Scene;
+import javafx.scene.control.TableColumn;
+import javafx.scene.control.TableView;
 import javafx.scene.control.TextArea;
+import javafx.scene.control.cell.PropertyValueFactory;
+import javafx.scene.layout.HBox;
 import javafx.scene.layout.StackPane;
 import javafx.scene.text.Font;
 import javafx.stage.Stage;
 
-import java.awt.event.KeyEvent;
 import java.io.BufferedReader;
 import java.io.BufferedWriter;
 import java.io.InputStreamReader;
 import java.io.OutputStreamWriter;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.List;
+import java.util.*;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -25,8 +28,11 @@ public class JollyDbg extends Application
   public static final int DEFAULT_WIDTH = 1366;
   public static final int DEFAULT_HEIGHT = 768;
 
-  private Thread gdbThread = null;
-  private TextArea txtAssembly = null;
+  private Thread                   gdbThread    = null;
+  private TextArea                 txtAssembly  = null;
+  private TableView<Register>      tblRegisters = null;
+  private ObservableList<Register> registers = FXCollections.observableArrayList();
+
   boolean step = false;
   boolean quit = false;
   boolean ret = false;
@@ -57,22 +63,52 @@ public class JollyDbg extends Application
         {
           try
           {
-            boolean disassembly = false;
+            boolean registerUpdate = false;
+            boolean disassemblyUpdate = false;
             String input;
+
             while (null != (input = br.readLine()))
             {
-              if (!disassembly)
+              if (registerUpdate)
+              {
+                if (input.startsWith("(gdb)")) continue;
+                if (input.startsWith("End"))
+                {
+                  registerUpdate = false;
+                  continue;
+                }
+
+                final List<String> register = Stream.of(input.replace("\t", " ").split(" ")).filter(s -> s.trim().length() != 0).collect(Collectors.toList());
+                Platform.runLater(() ->
+                {
+                  for (int i = 0; i < register.size(); i += 3)
+                  {
+                    System.out.println(register.get(i));
+                    registers.add(new Register(register.get(i), register.get(i + 1), register.get(i + 2)));
+                  }
+                });
+              }
+              else if (!disassemblyUpdate)
               {
                 if (input.startsWith("(gdb) Dump"))
                 {
-                  disassembly = true;
+                  disassemblyUpdate = true;
+                  registerUpdate = false;
+
                   Platform.runLater(() -> txtAssembly.clear());
                 }
                 continue;
               }
               else if (input.startsWith("End"))
               {
-                disassembly = false;
+                disassemblyUpdate = false;
+                registerUpdate = true;
+
+                Platform.runLater(() -> { registers.clear(); tblRegisters.refresh(); });
+
+                bw.write("info registers\n");
+                bw.flush();
+
                 continue;
               }
 
@@ -135,10 +171,30 @@ public class JollyDbg extends Application
 
     txtAssembly = new TextArea();
     txtAssembly.setEditable(false);
-    txtAssembly.setFont(Font.font(30));
+    txtAssembly.setFont(Font.font(25));
+
+    TableColumn regName = new TableColumn("Register");
+    TableColumn regValue = new TableColumn("Value");
+
+    TableColumn regValueHex = new TableColumn("Hex");
+    TableColumn regValueDec = new TableColumn("Dec");
+    regValue.getColumns().addAll(regValueHex, regValueDec);
+
+    regName.setCellValueFactory(new PropertyValueFactory<Register,String>("name"));
+    regValueHex.setCellValueFactory(new PropertyValueFactory<Register,String>("valueHex"));
+    regValueDec.setCellValueFactory(new PropertyValueFactory<Register,String>("valueDec"));
+
+    tblRegisters = new TableView();
+    tblRegisters.setItems(registers);
+    tblRegisters.getColumns().addAll(regName, regValue);
+
+    HBox hbox = new HBox();
+    hbox.setSpacing(5);
+    hbox.setPadding(new Insets(10, 0, 0, 10));
+    hbox.getChildren().addAll(txtAssembly, tblRegisters);
 
     StackPane root = new StackPane();
-    root.getChildren().add(txtAssembly);
+    root.getChildren().add(hbox);
 
     final Scene scene = new Scene(root, DEFAULT_WIDTH, DEFAULT_HEIGHT);
     scene.setOnKeyPressed(event ->
@@ -164,9 +220,44 @@ public class JollyDbg extends Application
     txtAssembly.setOnKeyPressed( scene.getOnKeyPressed() );
 
     primaryStage.setScene(scene);
+    primaryStage.setOnCloseRequest(e -> quit = true);
     primaryStage.show();
 
     launchGdb();
+  }
+
+  public static class Register
+  {
+    private final SimpleStringProperty name;
+    private final SimpleStringProperty valueHex;
+    private final SimpleStringProperty valueDec;
+
+    private Register(String fName, String lName, String valueDec) {
+      this.name = new SimpleStringProperty(fName);
+      this.valueHex = new SimpleStringProperty(lName);
+      this.valueDec = new SimpleStringProperty(valueDec);
+    }
+
+    public String getName() {
+      return name.get();
+    }
+    public void setName(String fName) {
+      name.set(fName);
+    }
+
+    public String getValueHex() {
+      return valueHex.get();
+    }
+    public void setValueHex(String fName) {
+      valueHex.set(fName);
+    }
+
+    public String getValueDec() {
+      return valueDec.get();
+    }
+    public void setValueDec(String fName) {
+      valueDec.set(fName);
+    }
   }
 
   public static void main(String[] args)
