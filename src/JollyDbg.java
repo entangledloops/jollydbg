@@ -185,13 +185,17 @@ public class JollyDbg extends Application
 
     txtAssembly = new TextArea();
     txtAssembly.setEditable(false);
-    txtAssembly.setFont(Font.font(25));
+    txtAssembly.setFont(Font.font(15));
 
     TableColumn regName = new TableColumn("Register");
     TableColumn regValue = new TableColumn("Value");
 
     TableColumn regValueHex = new TableColumn("Hex");
+    regValueHex.setPrefWidth(200);
+
     TableColumn regValueDec = new TableColumn("Dec");
+    regValueDec.setPrefWidth(200);
+
     regValue.getColumns().addAll(regValueHex, regValueDec);
 
     regName.setCellValueFactory(new PropertyValueFactory<Register,String>("name"));
@@ -201,6 +205,7 @@ public class JollyDbg extends Application
     tblRegisters = new TableView();
     tblRegisters.setItems(registers);
     tblRegisters.getColumns().addAll(regName, regValue);
+    tblRegisters.setColumnResizePolicy(TableView.UNCONSTRAINED_RESIZE_POLICY);
 
     HBox hbox = new HBox();
     hbox.setSpacing(5);
