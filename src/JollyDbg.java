@@ -48,7 +48,8 @@ public class JollyDbg extends Application
       final List<String> gdbList = new ArrayList<>();
       gdbList.add("gdb");
 
-      final List<String> cmdList = Stream.of(gdbList, getParameters().getRaw()).flatMap(Collection::stream).collect(Collectors.toList());
+      final String params = getParameters().getRaw().stream().skip(1).collect(Collectors.toList()).stream().reduce("", (s,t) -> s + " " + t);
+      final List<String> cmdList = Stream.of(gdbList, getParameters().getRaw()).flatMap(Collection::stream).limit(2).collect(Collectors.toList());
       final String[] cmdArray = cmdList.toArray(new String[cmdList.size()]);
 
       try
@@ -60,7 +61,7 @@ public class JollyDbg extends Application
         final BufferedReader br = new BufferedReader(new InputStreamReader( gdb.getInputStream() ));
         final BufferedWriter bw = new BufferedWriter(new OutputStreamWriter( gdb.getOutputStream() ));
 
-        bw.write("break main\nr\ndisassemble\n");
+        bw.write("break main\nr " + params + "\ndisassemble\n");
         bw.flush();
 
         new Thread(() ->
