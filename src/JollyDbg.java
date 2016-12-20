@@ -75,7 +75,7 @@ public class JollyDbg extends Application
             {
               if (registerUpdate)
               {
-                if (input.startsWith("(gdb)"))
+                if (input.startsWith("(gdb)") || input.startsWith("ymm"))
                 {
                   if (registerUpdateStarted)
                   {
@@ -88,7 +88,7 @@ public class JollyDbg extends Application
                   }
                   continue;
                 }
-                if (input.startsWith("End"))
+                else if (input.startsWith("End"))
                 {
                   registerUpdate = false;
                   continue;
@@ -120,7 +120,7 @@ public class JollyDbg extends Application
 
                 Platform.runLater(() -> { registers.clear(); tblRegisters.refresh(); });
 
-                bw.write("info registers\n");
+                bw.write("info all-registers\n");
                 bw.flush();
               }
               else
