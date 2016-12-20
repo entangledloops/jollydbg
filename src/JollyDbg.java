@@ -4,14 +4,18 @@ import javafx.beans.property.SimpleStringProperty;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
 import javafx.geometry.Insets;
+import javafx.geometry.Pos;
+import javafx.geometry.Rectangle2D;
 import javafx.scene.Scene;
 import javafx.scene.control.TableColumn;
 import javafx.scene.control.TableView;
 import javafx.scene.control.TextArea;
 import javafx.scene.control.cell.PropertyValueFactory;
 import javafx.scene.layout.HBox;
+import javafx.scene.layout.Priority;
 import javafx.scene.layout.StackPane;
 import javafx.scene.text.Font;
+import javafx.stage.Screen;
 import javafx.stage.Stage;
 
 import java.io.BufferedReader;
@@ -63,7 +67,7 @@ public class JollyDbg extends Application
         {
           try
           {
-            boolean registerUpdate = false;
+            boolean registerUpdate = false, registerUpdateStarted = false;
             boolean disassemblyUpdate = false;
             String input;
 
@@ -71,7 +75,19 @@ public class JollyDbg extends Application
             {
               if (registerUpdate)
               {
-                if (input.startsWith("(gdb)")) continue;
+                if (input.startsWith("(gdb)"))
+                {
+                  if (registerUpdateStarted)
+                  {
+                    registerUpdateStarted = false;
+                    registerUpdate = false;
+                  }
+                  else
+                  {
+                    registerUpdateStarted = true;
+                  }
+                  continue;
+                }
                 if (input.startsWith("End"))
                 {
                   registerUpdate = false;
@@ -79,14 +95,13 @@ public class JollyDbg extends Application
                 }
 
                 final List<String> register = Stream.of(input.replace("\t", " ").split(" ")).filter(s -> s.trim().length() != 0).collect(Collectors.toList());
-                Platform.runLater(() ->
-                {
-                  for (int i = 0; i < register.size(); i += 3)
-                  {
-                    System.out.println(register.get(i));
-                    registers.add(new Register(register.get(i), register.get(i + 1), register.get(i + 2)));
-                  }
-                });
+
+                boolean standard = register.size() == 3;
+                final String name = register.get(0);
+                final String dec = standard ? register.get(1) : register.stream().skip(2).reduce("", (s,t) -> s + " " + t);
+                final String hex = standard ? register.get(2) : "";
+
+                Platform.runLater(() -> registers.add(new Register(name, dec, hex)));
               }
               else if (!disassemblyUpdate)
               {
@@ -97,7 +112,6 @@ public class JollyDbg extends Application
 
                   Platform.runLater(() -> txtAssembly.clear());
                 }
-                continue;
               }
               else if (input.startsWith("End"))
               {
@@ -108,12 +122,12 @@ public class JollyDbg extends Application
 
                 bw.write("info registers\n");
                 bw.flush();
-
-                continue;
               }
-
-              final String inputCopy = input;
-              Platform.runLater(() -> txtAssembly.appendText(inputCopy + "\n"));
+              else
+              {
+                final String inputCopy = input;
+                Platform.runLater(() -> txtAssembly.appendText(inputCopy + "\n"));
+              }
             }
           }
           catch (Throwable ignored) {}
@@ -192,6 +206,9 @@ public class JollyDbg extends Application
     hbox.setSpacing(5);
     hbox.setPadding(new Insets(10, 0, 0, 10));
     hbox.getChildren().addAll(txtAssembly, tblRegisters);
+    hbox.setAlignment(Pos.TOP_CENTER);
+    hbox.setHgrow(tblRegisters, Priority.ALWAYS);
+    //hbox.setMaxWidth(Double.MAX_VALUE);
 
     StackPane root = new StackPane();
     root.getChildren().add(hbox);
@@ -219,6 +236,13 @@ public class JollyDbg extends Application
 
     txtAssembly.setOnKeyPressed( scene.getOnKeyPressed() );
 
+    Screen screen = Screen.getPrimary();
+    Rectangle2D bounds = screen.getVisualBounds();
+
+    primaryStage.setX(bounds.getMinX());
+    primaryStage.setY(bounds.getMinY());
+    primaryStage.setWidth(bounds.getWidth());
+    primaryStage.setHeight(bounds.getHeight());
     primaryStage.setScene(scene);
     primaryStage.setOnCloseRequest(e -> quit = true);
     primaryStage.show();
