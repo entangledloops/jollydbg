@@ -238,6 +238,7 @@ public class JollyDbg extends Application
     });
 
     txtAssembly.setOnKeyPressed( scene.getOnKeyPressed() );
+    tblRegisters.setOnKeyPressed( scene.getOnKeyPressed() );
 
     Screen screen = Screen.getPrimary();
     Rectangle2D bounds = screen.getVisualBounds();
