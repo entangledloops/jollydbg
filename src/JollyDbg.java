@@ -59,7 +59,7 @@ public class JollyDbg extends Application
         final BufferedReader br = new BufferedReader(new InputStreamReader( gdb.getInputStream() ));
         final BufferedWriter bw = new BufferedWriter(new OutputStreamWriter( gdb.getOutputStream() ));
 
-        bw.write("break main\nr " + params + "\ndisassemble\n");
+        bw.write("break main\nrun " + params + "\ndisassemble\n");
         bw.flush();
 
         new Thread(() ->
