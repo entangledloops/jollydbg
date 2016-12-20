@@ -28,7 +28,7 @@ import java.util.stream.Stream;
 
 public class JollyDbg extends Application
 {
-  public static final String VERSION = "1.0.0";
+  public static final String VERSION = "1.0.1";
 
   private Thread                   gdbThread    = null;
   private TextArea                 txtAssembly  = null;
