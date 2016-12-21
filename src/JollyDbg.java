@@ -154,7 +154,7 @@ public class JollyDbg extends Application
               if (step)
               {
                 step = false;
-                bw.write("step\ndisassemble\n");
+                bw.write("stepi\ndisassemble\n");
                 bw.flush();
               }
 
