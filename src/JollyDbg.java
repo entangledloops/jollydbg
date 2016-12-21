@@ -80,12 +80,13 @@ public class JollyDbg extends Application
                   {
                     registerUpdateStarted = false;
                     registerUpdate = false;
+                    continue;
                   }
                   else
                   {
+                    input = input.replace("(gdb)", "");
                     registerUpdateStarted = true;
                   }
-                  continue;
                 }
                 else if (input.startsWith("End"))
                 {
