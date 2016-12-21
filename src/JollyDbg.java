@@ -75,6 +75,7 @@ public class JollyDbg extends Application
             {
               if (registerUpdate)
               {
+                // first and last output will have "gdb"; vectors start with "ymm"
                 if (input.startsWith("(gdb)") || input.startsWith("ymm"))
                 {
                   if (registerUpdateStarted)
@@ -89,15 +90,17 @@ public class JollyDbg extends Application
                     registerUpdateStarted = true;
                   }
                 }
+                // output may also terminate in End
                 else if (input.startsWith("End"))
                 {
                   registerUpdate = false;
                   continue;
                 }
 
+                // we chop up gdb output into an array of strings separated on whitespace
                 final List<String> register = Stream.of(input.replace("\t", " ").split(" ")).filter(s -> s.trim().length() != 0).collect(Collectors.toList());
 
-                boolean standard = register.size() == 3;
+                boolean standard = register.size() == 3; // a "standard" gdb register shows 3 values, others we'll condense into 2
                 final String name = register.get(0);
                 final String dec = standard ? register.get(1) : register.stream().skip(2).reduce("", (s,t) -> s + " " + t);
                 final String hex = standard ? register.get(2) : "";
